@@ -1,4 +1,4 @@
-package com.example.kodiremote.presentation.theme
+package com.dom.kodiremote.presentation.theme
 
 import androidx.compose.runtime.Composable
 import androidx.wear.compose.material.MaterialTheme

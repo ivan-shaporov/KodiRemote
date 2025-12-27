@@ -1,4 +1,4 @@
-package com.example.kodiremote.complication
+package com.dom.kodiremote.complication
 
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType

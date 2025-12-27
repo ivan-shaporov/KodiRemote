@@ -1,4 +1,4 @@
-package com.example.kodiremote.tile
+package com.dom.kodiremote.tile
 
 import android.content.Context
 import androidx.wear.protolayout.ColorBuilders.argb

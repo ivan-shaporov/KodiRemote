@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.kodiremote"
+    namespace = "com.dom.kodiremote"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.kodiremote"
+        applicationId = "com.dom.kodiremote"
         minSdk = 36
         targetSdk = 36
         versionCode = 1
@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.horologist.compose.tools)
     implementation(libs.horologist.tiles)
     implementation(libs.watchface.complications.data.source.ktx)
+    implementation("androidx.compose.material:material-icons-extended-android:1.6.1")
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
