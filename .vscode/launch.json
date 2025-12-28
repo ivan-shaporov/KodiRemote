@@ -2,26 +2,47 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run Android App",
+            "name": "Stop App",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/noop.js",
+            "preLaunchTask": "stopApp",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Run on Watch",
+            "type": "android",
+            "request": "launch",
+            "appSrcRoot": "${workspaceFolder}/app/src/main",
+            "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
+            "preLaunchTask": "installWatch",
+            "postDebugTask": "stopWatch",
+            "targetDevice": "192.168.86.226:41913"
+        },
+        {
+            "name": "Run on Emulator",
             "type": "android",
             "request": "launch",
             "appSrcRoot": "${workspaceFolder}/app/src/main",
             "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
             "preLaunchTask": "buildDebug",
-            "postDebugTask": "stopApp"
+            "postDebugTask": "stopApp",
+            "targetDevice": "emulator-5554"
         },
         {
-            "name": "Run Android App (No Debug)",
+            "name": "Connect to Watch",
             "type": "node",
             "request": "launch",
-            "runtimeExecutable": "cmd.exe",
-            "runtimeArgs": [
-                "/c",
-                "echo",
-                "App Started"
-            ],
-            "preLaunchTask": "runDebug",
-            "postDebugTask": "stopApp",
+            "program": "${workspaceFolder}/.vscode/noop.js",
+            "preLaunchTask": "connectWatch",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Start Emulator",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/noop.js",
+            "preLaunchTask": "startEmulatorDetached",
             "console": "integratedTerminal"
         }
     ]
