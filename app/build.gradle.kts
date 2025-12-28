@@ -18,6 +18,18 @@ android {
         version = release(36)
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = localProperties.getProperty("signing.storeFile")
+            if (!storeFilePath.isNullOrBlank()) {
+                storeFile = file(storeFilePath)
+                storePassword = localProperties.getProperty("signing.storePassword")
+                keyAlias = localProperties.getProperty("signing.keyAlias")
+                keyPassword = localProperties.getProperty("signing.keyPassword")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.dom.kodiremote"
         minSdk = 36
@@ -33,6 +45,12 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            val storeFilePath = localProperties.getProperty("signing.storeFile")
+            signingConfig = if (!storeFilePath.isNullOrBlank()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

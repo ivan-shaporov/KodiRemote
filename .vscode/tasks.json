@@ -16,6 +16,16 @@
             "problemMatcher": []
         },
         {
+            "label": "buildRelease",
+            "type": "shell",
+            "command": "./gradlew assembleRelease",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "installWatch",
             "type": "shell",
             "command": "adb -s ${config:kodiremote.watchSerial} install -r app/build/outputs/apk/debug/app-debug.apk",
@@ -26,10 +36,27 @@
             "problemMatcher": []
         },
         {
+            "label": "installWatchRelease",
+            "type": "shell",
+            "command": "adb -s ${config:kodiremote.watchSerial} install -r app/build/outputs/apk/release/app-release.apk",
+            "dependsOn": [
+                "connectWatch",
+                "buildRelease"
+            ],
+            "problemMatcher": []
+        },
+        {
             "label": "runWatch",
             "type": "shell",
             "command": "adb -s ${config:kodiremote.watchSerial} shell am start -n com.dom.kodiremote/.presentation.MainActivity",
             "dependsOn": "installWatch",
+            "problemMatcher": []
+        },
+        {
+            "label": "runWatchRelease",
+            "type": "shell",
+            "command": "adb -s ${config:kodiremote.watchSerial} shell am start -n com.dom.kodiremote/.presentation.MainActivity",
+            "dependsOn": "installWatchRelease",
             "problemMatcher": []
         },
         {
@@ -59,10 +86,24 @@
             "problemMatcher": []
         },
         {
+            "label": "installEmulatorRelease",
+            "type": "shell",
+            "command": "adb -s emulator-5554 install -r app/build/outputs/apk/release/app-release.apk",
+            "dependsOn": "buildRelease",
+            "problemMatcher": []
+        },
+        {
             "label": "runEmulator",
             "type": "shell",
             "command": "adb -s emulator-5554 shell am start -n com.dom.kodiremote/.presentation.MainActivity",
             "dependsOn": "installEmulator",
+            "problemMatcher": []
+        },
+        {
+            "label": "runEmulatorRelease",
+            "type": "shell",
+            "command": "adb -s emulator-5554 shell am start -n com.dom.kodiremote/.presentation.MainActivity",
+            "dependsOn": "installEmulatorRelease",
             "problemMatcher": []
         },
         {
