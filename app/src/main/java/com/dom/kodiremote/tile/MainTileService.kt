@@ -2,6 +2,7 @@ package com.dom.kodiremote.tile
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.SystemClock
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
@@ -15,7 +16,9 @@ import androidx.wear.protolayout.material.Text
 import androidx.wear.protolayout.material.Typography
 import androidx.wear.protolayout.material.layouts.MultiButtonLayout
 import androidx.wear.protolayout.material.layouts.PrimaryLayout
+import androidx.wear.tiles.EventBuilders
 import androidx.wear.tiles.RequestBuilders
+import androidx.wear.tiles.TileService
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.tooling.preview.Preview
 import androidx.wear.tiles.tooling.preview.TilePreviewData
@@ -26,12 +29,31 @@ import com.dom.kodiremote.presentation.MainActivity
 import com.dom.kodiremote.kodi.NetworkKodiClient
 
 private const val RESOURCES_VERSION = "0"
+private const val TILE_FRESHNESS_INTERVAL_MS = 2_000L
+private const val TILE_ENTER_UPDATE_MIN_INTERVAL_MS = 1_000L
+private const val TILE_TIMELINE_ENTRY_VALIDITY_MS = 2_500L
 
 /**
  * Skeleton for a tile with no images.
  */
 @OptIn(ExperimentalHorologistApi::class)
 class MainTileService : SuspendingTileService() {
+
+    companion object {
+        private var lastEnterUpdateElapsedMs: Long = 0L
+    }
+
+    override fun onTileEnterEvent(requestParams: EventBuilders.TileEnterEvent) {
+        super.onTileEnterEvent(requestParams)
+        // When the user swipes onto the tile, the system may initially show a cached timeline.
+        // Request an update so tileRequest() runs and the play/pause icon reflects Kodi's
+        // current player state.
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastEnterUpdateElapsedMs >= TILE_ENTER_UPDATE_MIN_INTERVAL_MS) {
+            lastEnterUpdateElapsedMs = now
+            TileService.getUpdater(this).requestUpdate(MainTileService::class.java)
+        }
+    }
 
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
@@ -90,9 +112,17 @@ private fun tile(
     context: Context,
     isPlaying: Boolean
 ): TileBuilders.Tile {
+    val nowWallClockMs = System.currentTimeMillis()
+
     val singleTileTimeline = TimelineBuilders.Timeline.Builder()
         .addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder()
+                .setValidity(
+                    TimelineBuilders.TimeInterval.Builder()
+                        .setStartMillis(nowWallClockMs)
+                        .setEndMillis(nowWallClockMs + TILE_TIMELINE_ENTRY_VALIDITY_MS)
+                        .build()
+                )
                 .setLayout(
                     LayoutElementBuilders.Layout.Builder()
                         .setRoot(tileLayout(requestParams, context, isPlaying))
@@ -105,6 +135,12 @@ private fun tile(
     return TileBuilders.Tile.Builder()
         .setResourcesVersion(RESOURCES_VERSION)
         .setTileTimeline(singleTileTimeline)
+        // IMPORTANT: In Tiles, a freshness interval of 0 DISABLES auto-refresh.
+        // If the system shows a cached timeline when you swipe back to the tile, it may not call
+        // tileRequest() again unless the tile is considered stale. Using a short interval makes
+        // the platform re-fetch the tile around the time it comes on-screen (best-effort; the
+        // system may still throttle).
+        .setFreshnessIntervalMillis(TILE_FRESHNESS_INTERVAL_MS)
         .build()
 }
 
