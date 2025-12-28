@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# VS Code per-developer workspace settings
+.vscode/settings.json

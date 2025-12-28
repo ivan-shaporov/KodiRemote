@@ -18,7 +18,7 @@
         {
             "label": "installWatch",
             "type": "shell",
-            "command": "adb -s 192.168.86.226:41913 install -r app/build/outputs/apk/debug/app-debug.apk",
+            "command": "adb -s ${config:kodiremote.watchSerial} install -r app/build/outputs/apk/debug/app-debug.apk",
             "dependsOn": [
                 "connectWatch",
                 "buildDebug"
@@ -28,14 +28,14 @@
         {
             "label": "runWatch",
             "type": "shell",
-            "command": "adb -s 192.168.86.226:41913 shell am start -n com.dom.kodiremote/.presentation.MainActivity",
+            "command": "adb -s ${config:kodiremote.watchSerial} shell am start -n com.dom.kodiremote/.presentation.MainActivity",
             "dependsOn": "installWatch",
             "problemMatcher": []
         },
         {
             "label": "runWatchWaitForDebugger",
             "type": "shell",
-            "command": "adb -s 192.168.86.226:41913 shell am start -D -n com.dom.kodiremote/.presentation.MainActivity",
+            "command": "adb -s ${config:kodiremote.watchSerial} shell am start -D -n com.dom.kodiremote/.presentation.MainActivity",
             "dependsOn": "installWatch",
             "problemMatcher": []
         },
@@ -46,7 +46,7 @@
             "args": [
                 "-NoProfile",
                 "-Command",
-                "$ErrorActionPreference='Stop'; $serial='192.168.86.226:41913'; $pkg='com.dom.kodiremote'; $pid=(adb -s $serial shell pidof -s $pkg).Trim(); if (-not $pid) { throw 'Could not find app PID. Is the app running and debuggable?'; }; adb -s $serial forward tcp:8700 jdwp:$pid; Write-Host ('Forwarded tcp:8700 -> jdwp:' + $pid)"
+                "$ErrorActionPreference='Stop'; $serial='${config:kodiremote.watchSerial}'; $pkg='com.dom.kodiremote'; $pid=(adb -s $serial shell pidof -s $pkg).Trim(); if (-not $pid) { throw 'Could not find app PID. Is the app running and debuggable?'; }; adb -s $serial forward tcp:8700 jdwp:$pid; Write-Host ('Forwarded tcp:8700 -> jdwp:' + $pid)"
             ],
             "dependsOn": "runWatchWaitForDebugger",
             "problemMatcher": []
@@ -74,13 +74,13 @@
         {
             "label": "stopWatch",
             "type": "shell",
-            "command": "adb -s 192.168.86.226:41913 shell am force-stop com.dom.kodiremote",
+            "command": "adb -s ${config:kodiremote.watchSerial} shell am force-stop com.dom.kodiremote",
             "problemMatcher": []
         },
         {
             "label": "connectWatch",
             "type": "shell",
-            "command": "adb connect 192.168.86.226:41913",
+            "command": "adb connect ${config:kodiremote.watchSerial}",
             "problemMatcher": []
         },
         {
