@@ -84,22 +84,6 @@
             "problemMatcher": []
         },
         {
-            "label": "startEmulator",
-            "type": "shell",
-            "command": "D:\\Android\\Sdk\\emulator\\emulator.exe -avd Wear_OS_Large_Round",
-            "isBackground": true,
-            "problemMatcher": {
-                "pattern": {
-                    "regexp": "^.*$"
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "^.*",
-                    "endsPattern": "^.*"
-                }
-            }
-        },
-        {
             "label": "startEmulatorDetached",
             "type": "shell",
             "command": "cmd.exe",
@@ -107,7 +91,7 @@
                 "/c",
                 "start",
                 "\"\"",
-                "\"D:\\Android\\Sdk\\emulator\\emulator.exe\"",
+                "emulator.exe",
                 "-avd",
                 "Wear_OS_Large_Round"
             ],
