@@ -58,7 +58,21 @@ class NetworkKodiClient(
     }
 
     override suspend fun isPlaying(): Boolean {
-        // TODO: Implement proper check
-        return true
+        try {
+            val response = service.execute(
+                RpcRequest(
+                    method = "Player.GetProperties",
+                    params = mapOf(
+                        "playerid" to 1,
+                        "properties" to listOf("speed")
+                    )
+                )
+            )
+            val result = response.result as? Map<*, *>
+            val speed = result?.get("speed") as? Double
+            return (speed ?: 0.0) != 0.0
+        } catch (e: Exception) {
+            return false
+        }
     }
 }

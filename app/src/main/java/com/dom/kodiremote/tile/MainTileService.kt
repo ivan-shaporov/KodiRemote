@@ -23,6 +23,7 @@ import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.dom.kodiremote.presentation.MainActivity
+import com.dom.kodiremote.kodi.NetworkKodiClient
 
 private const val RESOURCES_VERSION = "0"
 
@@ -34,31 +35,67 @@ class MainTileService : SuspendingTileService() {
 
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
-    ) = resources(requestParams)
+    ) = resources()
 
     override suspend fun tileRequest(
         requestParams: RequestBuilders.TileRequest
-    ) = tile(requestParams, this)
+    ): TileBuilders.Tile {
+        val client = NetworkKodiClient()
+
+        if (requestParams.currentState.lastClickableId.isNotEmpty()) {
+            try {
+                when (requestParams.currentState.lastClickableId) {
+                    "kodi_${MainActivity.TILE_ACTION_PLAY_PAUSE}" -> client.playPause()
+                    "kodi_${MainActivity.TILE_ACTION_STOP}" -> client.stop()
+                    "kodi_${MainActivity.TILE_ACTION_NEXT}" -> client.next()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        val isPlaying = client.isPlaying()
+        return tile(requestParams, this, isPlaying)
+    }
 }
 
-private fun resources(
-    requestParams: RequestBuilders.ResourcesRequest
-): ResourceBuilders.Resources {
+private fun resources(): ResourceBuilders.Resources {
     return ResourceBuilders.Resources.Builder()
         .setVersion(RESOURCES_VERSION)
+        .addIdToImageMapping("ic_play_arrow", ResourceBuilders.ImageResource.Builder()
+            .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
+                .setResourceId(com.dom.kodiremote.R.drawable.ic_play_arrow)
+                .build())
+            .build())
+        .addIdToImageMapping("ic_pause", ResourceBuilders.ImageResource.Builder()
+            .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
+                .setResourceId(com.dom.kodiremote.R.drawable.ic_pause)
+                .build())
+            .build())
+        .addIdToImageMapping("ic_stop", ResourceBuilders.ImageResource.Builder()
+            .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
+                .setResourceId(com.dom.kodiremote.R.drawable.ic_stop)
+                .build())
+            .build())
+        .addIdToImageMapping("ic_skip_next", ResourceBuilders.ImageResource.Builder()
+            .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
+                .setResourceId(com.dom.kodiremote.R.drawable.ic_skip_next)
+                .build())
+            .build())
         .build()
 }
 
 private fun tile(
     requestParams: RequestBuilders.TileRequest,
     context: Context,
+    isPlaying: Boolean
 ): TileBuilders.Tile {
     val singleTileTimeline = TimelineBuilders.Timeline.Builder()
         .addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder()
                 .setLayout(
                     LayoutElementBuilders.Layout.Builder()
-                        .setRoot(tileLayout(requestParams, context))
+                        .setRoot(tileLayout(requestParams, context, isPlaying))
                         .build()
                 )
                 .build()
@@ -74,33 +111,30 @@ private fun tile(
 private fun tileLayout(
     requestParams: RequestBuilders.TileRequest,
     context: Context,
+    isPlaying: Boolean
 ): LayoutElementBuilders.LayoutElement {
-    val activityComponentName = ComponentName(context, MainActivity::class.java)
 
     fun clickableFor(action: String): ModifiersBuilders.Clickable {
-        val extras = mapOf(
-            MainActivity.EXTRA_TILE_ACTION to ActionBuilders.stringExtra(action)
-        )
         return ModifiersBuilders.Clickable.Builder()
             .setId("kodi_$action")
-            .setOnClick(ActionBuilders.launchAction(activityComponentName, extras))
+            .setOnClick(ActionBuilders.LoadAction.Builder().build())
             .build()
     }
 
     val playPauseButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_PLAY_PAUSE))
-        .setTextContent("⏯")
-        .setContentDescription("Play/Pause")
+        .setIconContent(if (isPlaying) "ic_pause" else "ic_play_arrow")
+        .setContentDescription(if (isPlaying) "Pause" else "Play")
         .setButtonColors(ButtonDefaults.PRIMARY_COLORS)
         .build()
 
     val stopButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_STOP))
-        .setTextContent("⏹")
+        .setIconContent("ic_stop")
         .setContentDescription("Stop")
         .setButtonColors(ButtonDefaults.SECONDARY_COLORS)
         .build()
 
     val nextButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_NEXT))
-        .setTextContent("⏭")
+        .setIconContent("ic_skip_next")
         .setContentDescription("Next")
         .setButtonColors(ButtonDefaults.PRIMARY_COLORS)
         .build()
@@ -125,6 +159,6 @@ private fun tileLayout(
 
 @Preview(device = WearDevices.SMALL_ROUND)
 @Preview(device = WearDevices.LARGE_ROUND)
-fun tilePreview(context: Context) = TilePreviewData(::resources) {
-    tile(it, context)
+fun tilePreview(context: Context) = TilePreviewData({ resources() }) {
+    tile(it, context, false)
 }

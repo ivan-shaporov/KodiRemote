@@ -37,6 +37,10 @@ import com.dom.kodiremote.presentation.theme.KodiRemoteTheme
 import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
+import androidx.wear.tiles.TileService
+import com.dom.kodiremote.tile.MainTileService
+
+import android.content.Intent
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -55,7 +59,9 @@ class MainActivity : ComponentActivity() {
         setTheme(android.R.style.Theme_DeviceDefault)
 
         val tileAction = intent?.getStringExtra(EXTRA_TILE_ACTION)
-        if (tileAction != null) {
+        val isLaunchedFromHistory = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        
+        if (tileAction != null && !isLaunchedFromHistory) {
             lifecycleScope.launch {
                 try {
                     val client = NetworkKodiClient()
@@ -68,6 +74,8 @@ class MainActivity : ComponentActivity() {
                 } catch (e: Exception) {
                     Log.e("KodiRemote", "Tile action failed: $tileAction", e)
                 } finally {
+                    TileService.getUpdater(this@MainActivity)
+                        .requestUpdate(MainTileService::class.java)
                     finish()
                 }
             }
