@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Android App",
+            "type": "android",
+            "request": "launch",
+            "appSrcRoot": "${workspaceFolder}/app/src/main",
+            "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
+            "preLaunchTask": "buildDebug",
+            "postDebugTask": "stopApp"
+        },
+        {
+            "name": "Run Android App (No Debug)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "cmd.exe",
+            "runtimeArgs": [
+                "/c",
+                "echo",
+                "App Started"
+            ],
+            "preLaunchTask": "runDebug",
+            "postDebugTask": "stopApp",
+            "console": "integratedTerminal"
+        }
+    ]
+}

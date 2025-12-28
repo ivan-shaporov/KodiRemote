@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "buildDebug",
+            "type": "shell",
+            "command": "./gradlew assembleDebug",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "installDebug",
+            "type": "shell",
+            "command": "adb install -r app/build/outputs/apk/debug/app-debug.apk",
+            "dependsOn": "buildDebug",
+            "problemMatcher": []
+        },
+        {
+            "label": "runDebug",
+            "type": "shell",
+            "command": "adb shell am start -n com.dom.kodiremote/.presentation.MainActivity",
+            "dependsOn": "installDebug",
+            "problemMatcher": []
+        },
+        {
+            "label": "stopApp",
+            "type": "shell",
+            "command": "adb shell am force-stop com.dom.kodiremote",
+            "problemMatcher": []
+        }
+    ]
+}
