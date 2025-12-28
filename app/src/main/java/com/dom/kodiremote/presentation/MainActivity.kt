@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +26,10 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.tooling.preview.devices.WearDevices
+import com.dom.kodiremote.kodi.NetworkKodiClient
 import com.dom.kodiremote.presentation.theme.KodiRemoteTheme
+import kotlinx.coroutines.launch
+import android.util.Log
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +47,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WearApp() {
+    val client = remember { NetworkKodiClient() }
+    val scope = rememberCoroutineScope()
+
     KodiRemoteTheme {
         var paused by remember { mutableStateOf(true) }
         Row(
@@ -52,16 +59,42 @@ fun WearApp() {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(onClick = { paused = !paused }) {
+            Button(onClick = {
+                scope.launch {
+                    try {
+                        client.playPause()
+                        paused = !paused
+                    } catch (e: Exception) {
+                        Log.e("KodiRemote", "Error in playPause", e)
+                    }
+                }
+            }) {
                 Icon(
                     imageVector = if (paused) Icons.Default.PlayArrow else Icons.Default.Pause,
                     contentDescription = if (paused) "Play" else "Pause"
                 )
             }
-            Button(onClick = { /*TODO*/ }) {
+            Button(onClick = {
+                scope.launch {
+                    try {
+                        client.stop()
+                        paused = true
+                    } catch (e: Exception) {
+                        Log.e("KodiRemote", "Error in stop", e)
+                    }
+                }
+            }) {
                 Icon(imageVector = Icons.Default.Stop, contentDescription = "Stop")
             }
-            Button(onClick = { /*TODO*/ }) {
+            Button(onClick = {
+                scope.launch {
+                    try {
+                        client.next()
+                    } catch (e: Exception) {
+                        Log.e("KodiRemote", "Error in next", e)
+                    }
+                }
+            }) {
                 Icon(imageVector = Icons.Default.SkipNext, contentDescription = "Next")
             }
         }

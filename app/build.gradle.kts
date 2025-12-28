@@ -1,3 +1,11 @@
+import java.util.Properties
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,6 +25,9 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField("String", "KODI_HOST", "\"${localProperties.getProperty("kodi.host", "")}\"")
+        buildConfigField("String", "KODI_USERNAME", "\"${localProperties.getProperty("kodi.username", "")}\"")
+        buildConfigField("String", "KODI_PASSWORD", "\"${localProperties.getProperty("kodi.password", "")}\"")
     }
 
     buildTypes {
@@ -38,6 +49,7 @@ android {
     useLibrary("wear-sdk")
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -58,6 +70,10 @@ dependencies {
     implementation(libs.horologist.compose.tools)
     implementation(libs.horologist.tiles)
     implementation(libs.watchface.complications.data.source.ktx)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
     implementation("androidx.compose.material:material-icons-extended-android:1.6.1")
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)

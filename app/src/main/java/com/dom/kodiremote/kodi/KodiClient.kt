@@ -1,8 +1,8 @@
 package com.dom.kodiremote.kodi
 
 interface KodiClient {
-    fun playPause()
-    fun next()
-    fun stop()
-    fun isPlaying(): Boolean
+    suspend fun playPause()
+    suspend fun next()
+    suspend fun stop()
+    suspend fun isPlaying(): Boolean
 }
