@@ -5,16 +5,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,15 +28,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.dom.kodiremote.kodi.NetworkKodiClient
 import com.dom.kodiremote.presentation.theme.KodiRemoteTheme
@@ -49,6 +55,14 @@ class MainActivity : ComponentActivity() {
         const val TILE_ACTION_PLAY_PAUSE = "play_pause"
         const val TILE_ACTION_STOP = "stop"
         const val TILE_ACTION_NEXT = "next"
+
+        const val SEEK_OFFSET_SMALL_SECONDS = 10
+        const val SEEK_OFFSET_LARGE_SECONDS = 30
+
+        const val TILE_ACTION_SEEK_BACK_SMALL = "seek_back_small"
+        const val TILE_ACTION_SEEK_BACK_LARGE = "seek_back_large"
+        const val TILE_ACTION_SEEK_FORWARD_SMALL = "seek_forward_small"
+        const val TILE_ACTION_SEEK_FORWARD_LARGE = "seek_forward_large"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,6 +83,10 @@ class MainActivity : ComponentActivity() {
                         TILE_ACTION_PLAY_PAUSE -> client.playPause()
                         TILE_ACTION_STOP -> client.stop()
                         TILE_ACTION_NEXT -> client.next()
+                        TILE_ACTION_SEEK_BACK_LARGE -> client.seekBy(-SEEK_OFFSET_LARGE_SECONDS)
+                        TILE_ACTION_SEEK_BACK_SMALL -> client.seekBy(-SEEK_OFFSET_SMALL_SECONDS)
+                        TILE_ACTION_SEEK_FORWARD_SMALL -> client.seekBy(SEEK_OFFSET_SMALL_SECONDS)
+                        TILE_ACTION_SEEK_FORWARD_LARGE -> client.seekBy(SEEK_OFFSET_LARGE_SECONDS)
                         else -> Log.w("KodiRemote", "Unknown tile action: $tileAction")
                     }
                 } catch (e: Exception) {
@@ -92,65 +110,181 @@ class MainActivity : ComponentActivity() {
 fun WearApp() {
     val client = remember { NetworkKodiClient() }
     val scope = rememberCoroutineScope()
-    val listState = rememberScalingLazyListState()
 
     KodiRemoteTheme {
-        var paused by remember { mutableStateOf(true) }
+        var isPlaying by remember { mutableStateOf(false) }
 
-        ScalingLazyColumn(
+        suspend fun refreshIsPlaying() {
+            try {
+                isPlaying = client.isPlaying()
+            } catch (e: Exception) {
+                Log.e("KodiRemote", "Error in isPlaying", e)
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            refreshIsPlaying()
+        }
+
+        val controlButtonSize = 42.12.dp
+        val contentTopOffsetDp = 16.85.dp
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colors.background),
-            state = listState,
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            item {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Button(onClick = {
-                        scope.launch {
-                            try {
-                                client.playPause()
-                                paused = !paused
-                            } catch (e: Exception) {
-                                Log.e("KodiRemote", "Error in playPause", e)
+            Spacer(modifier = Modifier.height(contentTopOffsetDp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                        Button(
+                            modifier = Modifier.size(controlButtonSize),
+                            onClick = {
+                            scope.launch {
+                                try {
+                                    client.playPause()
+                                    refreshIsPlaying()
+                                } catch (e: Exception) {
+                                    Log.e("KodiRemote", "Error in playPause", e)
+                                }
                             }
+                        })
+                        {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPlaying) "Pause" else "Play"
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = if (paused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                            contentDescription = if (paused) "Play" else "Pause"
-                        )
-                    }
-                    Button(onClick = {
-                        scope.launch {
-                            try {
-                                client.stop()
-                                paused = true
-                            } catch (e: Exception) {
-                                Log.e("KodiRemote", "Error in stop", e)
+
+                        Spacer(modifier = Modifier.width(2.dp))
+
+                        Button(
+                            modifier = Modifier.size(controlButtonSize),
+                            colors = ButtonDefaults.secondaryButtonColors(),
+                            onClick = {
+                            scope.launch {
+                                try {
+                                    client.stop()
+                                    isPlaying = false
+                                    refreshIsPlaying()
+                                } catch (e: Exception) {
+                                    Log.e("KodiRemote", "Error in stop", e)
+                                }
                             }
+                        })
+                        {
+                            Icon(imageVector = Icons.Default.Stop, contentDescription = "Stop")
                         }
-                    }) {
-                        Icon(imageVector = Icons.Default.Stop, contentDescription = "Stop")
-                    }
-                    Button(onClick = {
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                        Button(
+                            modifier = Modifier.size(controlButtonSize),
+                            colors = ButtonDefaults.secondaryButtonColors(),
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        client.seekBy(-MainActivity.SEEK_OFFSET_LARGE_SECONDS)
+                                        refreshIsPlaying()
+                                    } catch (e: Exception) {
+                                        Log.e("KodiRemote", "Error in seekBy(-30)", e)
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("-${MainActivity.SEEK_OFFSET_LARGE_SECONDS}", fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            modifier = Modifier.size(controlButtonSize),
+                            colors = ButtonDefaults.secondaryButtonColors(),
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        client.seekBy(-MainActivity.SEEK_OFFSET_SMALL_SECONDS)
+                                        refreshIsPlaying()
+                                    } catch (e: Exception) {
+                                        Log.e("KodiRemote", "Error in seekBy(-10)", e)
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("-${MainActivity.SEEK_OFFSET_SMALL_SECONDS}", fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            modifier = Modifier.size(controlButtonSize),
+                            colors = ButtonDefaults.secondaryButtonColors(),
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        client.seekBy(MainActivity.SEEK_OFFSET_SMALL_SECONDS)
+                                        refreshIsPlaying()
+                                    } catch (e: Exception) {
+                                        Log.e("KodiRemote", "Error in seekBy(10)", e)
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("+${MainActivity.SEEK_OFFSET_SMALL_SECONDS}", fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            modifier = Modifier.size(controlButtonSize),
+                            colors = ButtonDefaults.secondaryButtonColors(),
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        client.seekBy(MainActivity.SEEK_OFFSET_LARGE_SECONDS)
+                                        refreshIsPlaying()
+                                    } catch (e: Exception) {
+                                        Log.e("KodiRemote", "Error in seekBy(30)", e)
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("+${MainActivity.SEEK_OFFSET_LARGE_SECONDS}", fontWeight = FontWeight.Bold)
+                        }
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(
+                    modifier = Modifier.size(controlButtonSize),
+                    onClick = {
                         scope.launch {
                             try {
                                 client.next()
+                                refreshIsPlaying()
                             } catch (e: Exception) {
                                 Log.e("KodiRemote", "Error in next", e)
                             }
                         }
-                    }) {
-                        Icon(imageVector = Icons.Default.SkipNext, contentDescription = "Next")
                     }
+                ) {
+                    Icon(imageVector = Icons.Default.SkipNext, contentDescription = "Next")
                 }
             }
-
-            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
     }
 }

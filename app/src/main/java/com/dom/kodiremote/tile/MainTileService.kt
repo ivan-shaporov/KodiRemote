@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.SystemClock
 import androidx.wear.protolayout.ColorBuilders.argb
 import androidx.wear.protolayout.ActionBuilders
+import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ResourceBuilders
@@ -15,7 +16,6 @@ import androidx.wear.protolayout.material.ButtonDefaults
 import androidx.wear.protolayout.material.Text
 import androidx.wear.protolayout.material.Typography
 import androidx.wear.protolayout.material.layouts.MultiButtonLayout
-import androidx.wear.protolayout.material.layouts.PrimaryLayout
 import androidx.wear.tiles.EventBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileService
@@ -70,6 +70,10 @@ class MainTileService : SuspendingTileService() {
                     "kodi_${MainActivity.TILE_ACTION_PLAY_PAUSE}" -> client.playPause()
                     "kodi_${MainActivity.TILE_ACTION_STOP}" -> client.stop()
                     "kodi_${MainActivity.TILE_ACTION_NEXT}" -> client.next()
+                    "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_LARGE}" -> client.seekBy(-MainActivity.SEEK_OFFSET_LARGE_SECONDS)
+                    "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_SMALL}" -> client.seekBy(-MainActivity.SEEK_OFFSET_SMALL_SECONDS)
+                    "kodi_${MainActivity.TILE_ACTION_SEEK_FORWARD_SMALL}" -> client.seekBy(MainActivity.SEEK_OFFSET_SMALL_SECONDS)
+                    "kodi_${MainActivity.TILE_ACTION_SEEK_FORWARD_LARGE}" -> client.seekBy(MainActivity.SEEK_OFFSET_LARGE_SECONDS)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -77,7 +81,7 @@ class MainTileService : SuspendingTileService() {
         }
 
         val isPlaying = client.isPlaying()
-        return tile(requestParams, this, isPlaying)
+        return tile(this, isPlaying)
     }
 }
 
@@ -108,7 +112,6 @@ private fun resources(): ResourceBuilders.Resources {
 }
 
 private fun tile(
-    requestParams: RequestBuilders.TileRequest,
     context: Context,
     isPlaying: Boolean
 ): TileBuilders.Tile {
@@ -125,7 +128,7 @@ private fun tile(
                 )
                 .setLayout(
                     LayoutElementBuilders.Layout.Builder()
-                        .setRoot(tileLayout(requestParams, context, isPlaying))
+                        .setRoot(tileLayout(context, isPlaying))
                         .build()
                 )
                 .build()
@@ -145,7 +148,6 @@ private fun tile(
 }
 
 private fun tileLayout(
-    requestParams: RequestBuilders.TileRequest,
     context: Context,
     isPlaying: Boolean
 ): LayoutElementBuilders.LayoutElement {
@@ -157,44 +159,120 @@ private fun tileLayout(
             .build()
     }
 
+    val controlButtonSize = ButtonDefaults.DEFAULT_SIZE.value * 0.81f
+
     val playPauseButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_PLAY_PAUSE))
+        .setSize(controlButtonSize)
         .setIconContent(if (isPlaying) "ic_pause" else "ic_play_arrow")
         .setContentDescription(if (isPlaying) "Pause" else "Play")
         .setButtonColors(ButtonDefaults.PRIMARY_COLORS)
         .build()
 
     val stopButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_STOP))
+        .setSize(controlButtonSize)
         .setIconContent("ic_stop")
         .setContentDescription("Stop")
         .setButtonColors(ButtonDefaults.SECONDARY_COLORS)
         .build()
 
     val nextButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_NEXT))
+        .setSize(controlButtonSize)
         .setIconContent("ic_skip_next")
         .setContentDescription("Next")
         .setButtonColors(ButtonDefaults.PRIMARY_COLORS)
         .build()
 
-    val buttons = MultiButtonLayout.Builder()
+    val seekBackLargeButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_SEEK_BACK_LARGE))
+        .setSize(controlButtonSize)
+        .setTextContent("-${MainActivity.SEEK_OFFSET_LARGE_SECONDS}")
+        .setContentDescription("Back 30 seconds")
+        .setButtonColors(ButtonDefaults.SECONDARY_COLORS)
+        .build()
+
+    val seekBackSmallButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_SEEK_BACK_SMALL))
+        .setSize(controlButtonSize)
+        .setTextContent("-${MainActivity.SEEK_OFFSET_SMALL_SECONDS}")
+        .setContentDescription("Back 10 seconds")
+        .setButtonColors(ButtonDefaults.SECONDARY_COLORS)
+        .build()
+
+    val seekForwardSmallButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_SEEK_FORWARD_SMALL))
+        .setSize(controlButtonSize)
+        .setTextContent("+${MainActivity.SEEK_OFFSET_SMALL_SECONDS}")
+        .setContentDescription("Forward 10 seconds")
+        .setButtonColors(ButtonDefaults.SECONDARY_COLORS)
+        .build()
+
+    val seekForwardLargeButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_SEEK_FORWARD_LARGE))
+        .setSize(controlButtonSize)
+        .setTextContent("+${MainActivity.SEEK_OFFSET_LARGE_SECONDS}")
+        .setContentDescription("Forward 30 seconds")
+        .setButtonColors(ButtonDefaults.SECONDARY_COLORS)
+        .build()
+
+    val topButtons = MultiButtonLayout.Builder()
         .addButtonContent(playPauseButton)
-        .addButtonContent(nextButton)
         .addButtonContent(stopButton)
         .build()
 
-    return PrimaryLayout.Builder(requestParams.deviceConfiguration)
-        .setResponsiveContentInsetEnabled(true)
-        .setPrimaryLabelTextContent(
-            Text.Builder(context, "Kodi Remote")
-                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-                .setColor(argb(Colors.DEFAULT.onSurface))
+    val seekButtons = LayoutElementBuilders.Row.Builder()
+        .addContent(seekBackLargeButton)
+        .addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setWidth(DimensionBuilders.dp(0f))
                 .build()
         )
-        .setContent(buttons)
+        .addContent(seekBackSmallButton)
+        .addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setWidth(DimensionBuilders.dp(0f))
+                .build()
+        )
+        .addContent(seekForwardSmallButton)
+        .addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setWidth(DimensionBuilders.dp(0f))
+                .build()
+        )
+        .addContent(seekForwardLargeButton)
         .build()
+
+    val bottomButtons = MultiButtonLayout.Builder()
+        .addButtonContent(nextButton)
+        .build()
+
+    // On round screens, the usable width is much larger near the center.
+    // Shifting content down helps keep the 4 seek buttons on one line.
+    val contentTopOffsetDp = controlButtonSize * 0.4f
+
+    val content = LayoutElementBuilders.Column.Builder()
+        .setWidth(DimensionBuilders.expand())
+        .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+        .addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setHeight(DimensionBuilders.dp(contentTopOffsetDp))
+                .build()
+        )
+        .addContent(topButtons)
+        .addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setHeight(DimensionBuilders.dp(2f))
+                .build()
+        )
+        .addContent(seekButtons)
+        .addContent(
+            LayoutElementBuilders.Spacer.Builder()
+                .setHeight(DimensionBuilders.dp(2f))
+                .build()
+        )
+        .addContent(bottomButtons)
+        .build()
+
+    return content
 }
 
 @Preview(device = WearDevices.SMALL_ROUND)
 @Preview(device = WearDevices.LARGE_ROUND)
 fun tilePreview(context: Context) = TilePreviewData({ resources() }) {
-    tile(it, context, false)
+    tile(context, false)
 }
