@@ -39,6 +39,32 @@ class NetworkKodiClient(
         )
     }
 
+    override suspend fun previous() {
+        // 1. Get the current position in the playlist
+        val response = service.execute(
+            RpcRequest(
+                method = "Player.GetProperties",
+                params = mapOf("playerid" to 1, "properties" to listOf("position", "speed"))
+            )
+        )
+
+        val result = response.result as? Map<*, *> ?: return
+        val currentPosition = (result["position"] as? Number)?.toInt() ?: 0
+
+        // 2. Only attempt if we aren't at the very first video (index 0)
+        if (currentPosition > 0) {
+            service.execute(
+                RpcRequest(
+                    method = "Player.Open",
+                    params = mapOf(
+                        "item" to mapOf("playlistid" to 1, "position" to currentPosition - 1)
+                    )
+                )
+            )
+
+        }
+    }
+
     override suspend fun next() {
         service.execute(
             RpcRequest(

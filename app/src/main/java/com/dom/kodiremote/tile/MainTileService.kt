@@ -69,6 +69,7 @@ class MainTileService : SuspendingTileService() {
                 when (requestParams.currentState.lastClickableId) {
                     "kodi_${MainActivity.TILE_ACTION_PLAY_PAUSE}" -> client.playPause()
                     "kodi_${MainActivity.TILE_ACTION_STOP}" -> client.stop()
+                    "kodi_${MainActivity.TILE_ACTION_PREVIOUS}" -> client.previous()
                     "kodi_${MainActivity.TILE_ACTION_NEXT}" -> client.next()
                     "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_LARGE}" -> client.seekBy(-MainActivity.SEEK_OFFSET_LARGE_SECONDS)
                     "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_SMALL}" -> client.seekBy(-MainActivity.SEEK_OFFSET_SMALL_SECONDS)
@@ -101,6 +102,11 @@ private fun resources(): ResourceBuilders.Resources {
         .addIdToImageMapping("ic_stop", ResourceBuilders.ImageResource.Builder()
             .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
                 .setResourceId(com.dom.kodiremote.R.drawable.ic_stop)
+                .build())
+            .build())
+        .addIdToImageMapping("ic_skip_previous", ResourceBuilders.ImageResource.Builder()
+            .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
+                .setResourceId(com.dom.kodiremote.R.drawable.ic_skip_previous)
                 .build())
             .build())
         .addIdToImageMapping("ic_skip_next", ResourceBuilders.ImageResource.Builder()
@@ -182,6 +188,13 @@ private fun tileLayout(
         .setButtonColors(ButtonDefaults.PRIMARY_COLORS)
         .build()
 
+    val previousButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_PREVIOUS))
+        .setSize(controlButtonSize)
+        .setIconContent("ic_skip_previous")
+        .setContentDescription("Previous")
+        .setButtonColors(ButtonDefaults.PRIMARY_COLORS)
+        .build()
+
     val seekBackLargeButton = Button.Builder(context, clickableFor(MainActivity.TILE_ACTION_SEEK_BACK_LARGE))
         .setSize(controlButtonSize)
         .setTextContent("-${MainActivity.SEEK_OFFSET_LARGE_SECONDS}")
@@ -238,6 +251,7 @@ private fun tileLayout(
         .build()
 
     val bottomButtons = MultiButtonLayout.Builder()
+        .addButtonContent(previousButton)
         .addButtonContent(nextButton)
         .build()
 

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
         const val TILE_ACTION_PLAY_PAUSE = "play_pause"
         const val TILE_ACTION_STOP = "stop"
         const val TILE_ACTION_NEXT = "next"
+        const val TILE_ACTION_PREVIOUS = "previous"
 
         const val SEEK_OFFSET_SMALL_SECONDS = 10
         const val SEEK_OFFSET_LARGE_SECONDS = 30
@@ -83,6 +85,7 @@ class MainActivity : ComponentActivity() {
                         TILE_ACTION_PLAY_PAUSE -> client.playPause()
                         TILE_ACTION_STOP -> client.stop()
                         TILE_ACTION_NEXT -> client.next()
+                        TILE_ACTION_PREVIOUS -> client.previous()
                         TILE_ACTION_SEEK_BACK_LARGE -> client.seekBy(-SEEK_OFFSET_LARGE_SECONDS)
                         TILE_ACTION_SEEK_BACK_SMALL -> client.seekBy(-SEEK_OFFSET_SMALL_SECONDS)
                         TILE_ACTION_SEEK_FORWARD_SMALL -> client.seekBy(SEEK_OFFSET_SMALL_SECONDS)
@@ -269,6 +272,24 @@ fun WearApp() {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Button(
+                    modifier = Modifier.size(controlButtonSize),
+                    onClick = {
+                        scope.launch {
+                            try {
+                                client.previous()
+                                refreshIsPlaying()
+                            } catch (e: Exception) {
+                                Log.e("KodiRemote", "Error in previous", e)
+                            }
+                        }
+                    }
+                ) {
+                    Icon(imageVector = Icons.Default.SkipPrevious, contentDescription = "Previous")
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
                 Button(
                     modifier = Modifier.size(controlButtonSize),
                     onClick = {
