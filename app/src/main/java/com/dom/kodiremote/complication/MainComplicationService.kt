@@ -12,10 +12,12 @@ import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.data.SmallImage
 import androidx.wear.watchface.complications.data.SmallImageComplicationData
 import androidx.wear.watchface.complications.data.SmallImageType
+import androidx.wear.watchface.complications.data.NoDataComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
 import com.dom.kodiremote.R
 import com.dom.kodiremote.presentation.MainActivity
+import com.dom.kodiremote.service.ActionService
 
 /**
  * Provides a static Play/Pause button that toggles Kodi playback.
@@ -38,15 +40,15 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
 			ComplicationType.SMALL_IMAGE -> createSmallImageComplicationData()
 			ComplicationType.SHORT_TEXT -> createShortTextComplicationData()
 			ComplicationType.LONG_TEXT -> createLongTextComplicationData()
-			else -> throw IllegalArgumentException("Unknown complication type")
+			else -> NoDataComplicationData()
 		}
 	}
 
 	private fun createTapAction(): PendingIntent {
-		val intent = Intent(this, MainActivity::class.java).apply {
+		val intent = Intent(this, ActionService::class.java).apply {
 			putExtra(MainActivity.EXTRA_TILE_ACTION, MainActivity.TILE_ACTION_PLAY_PAUSE)
 		}
-		return PendingIntent.getActivity(
+		return PendingIntent.getService(
 			this,
 			0,
 			intent,

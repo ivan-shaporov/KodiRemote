@@ -12,19 +12,23 @@ class NetworkKodiClient(
 
     private val service: KodiService
 
-    init {
-        val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader("Authorization", Credentials.basic(BuildConfig.KODI_USERNAME, BuildConfig.KODI_PASSWORD))
-                    .build()
-                chain.proceed(request)
-            }
-            .build()
+    companion object {
+        private val okHttpClient: OkHttpClient by lazy {
+            OkHttpClient.Builder()
+                .addInterceptor { chain ->
+                    val request = chain.request().newBuilder()
+                        .addHeader("Authorization", Credentials.basic(BuildConfig.KODI_USERNAME, BuildConfig.KODI_PASSWORD))
+                        .build()
+                    chain.proceed(request)
+                }
+                .build()
+        }
+    }
 
+    init {
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
-            .client(client)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         service = retrofit.create(KodiService::class.java)
