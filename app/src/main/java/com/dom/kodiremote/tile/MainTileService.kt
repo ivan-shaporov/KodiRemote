@@ -27,8 +27,10 @@ import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.SuspendingTileService
 import com.dom.kodiremote.presentation.MainActivity
 import com.dom.kodiremote.kodi.NetworkKodiClient
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 
-private const val RESOURCES_VERSION = "0"
+private const val RESOURCES_VERSION = "1"
 private const val TILE_FRESHNESS_INTERVAL_MS = 2_000L
 private const val TILE_ENTER_UPDATE_MIN_INTERVAL_MS = 1_000L
 private const val TILE_TIMELINE_ENTRY_VALIDITY_MS = 2_500L
@@ -41,6 +43,19 @@ class MainTileService : SuspendingTileService() {
 
     companion object {
         private var lastEnterUpdateElapsedMs: Long = 0L
+    }
+
+    private fun isOnline(): Boolean {
+        return try {
+            val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Default to true if we can't check, so we don't block the UI unnecessarily
+            true
+        }
     }
 
     override fun onTileEnterEvent(requestParams: EventBuilders.TileEnterEvent) {
@@ -63,8 +78,9 @@ class MainTileService : SuspendingTileService() {
         requestParams: RequestBuilders.TileRequest
     ): TileBuilders.Tile {
         val client = NetworkKodiClient()
+        val isOnline = isOnline()
 
-        if (requestParams.currentState.lastClickableId.isNotEmpty()) {
+        if (isOnline && requestParams.currentState.lastClickableId.isNotEmpty()) {
             try {
                 when (requestParams.currentState.lastClickableId) {
                     "kodi_${MainActivity.TILE_ACTION_PLAY_PAUSE}" -> client.playPause()
@@ -81,8 +97,8 @@ class MainTileService : SuspendingTileService() {
             }
         }
 
-        val isPlaying = client.isPlaying()
-        return tile(this, isPlaying)
+        val isPlaying = if (isOnline) client.isPlaying() else false
+        return tile(this, isPlaying, isOnline)
     }
 }
 
@@ -104,6 +120,11 @@ private fun resources(): ResourceBuilders.Resources {
                 .setResourceId(com.dom.kodiremote.R.drawable.ic_stop)
                 .build())
             .build())
+        .addIdToImageMapping("ic_wifi_off", ResourceBuilders.ImageResource.Builder()
+            .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
+                .setResourceId(com.dom.kodiremote.R.drawable.ic_wifi_off)
+                .build())
+            .build())
         .addIdToImageMapping("ic_skip_previous", ResourceBuilders.ImageResource.Builder()
             .setAndroidResourceByResId(ResourceBuilders.AndroidImageResourceByResId.Builder()
                 .setResourceId(com.dom.kodiremote.R.drawable.ic_skip_previous)
@@ -119,7 +140,8 @@ private fun resources(): ResourceBuilders.Resources {
 
 private fun tile(
     context: Context,
-    isPlaying: Boolean
+    isPlaying: Boolean,
+    isOnline: Boolean
 ): TileBuilders.Tile {
     val nowWallClockMs = System.currentTimeMillis()
 
@@ -134,7 +156,7 @@ private fun tile(
                 )
                 .setLayout(
                     LayoutElementBuilders.Layout.Builder()
-                        .setRoot(tileLayout(context, isPlaying))
+                        .setRoot(tileLayout(context, isPlaying, isOnline))
                         .build()
                 )
                 .build()
@@ -155,8 +177,43 @@ private fun tile(
 
 private fun tileLayout(
     context: Context,
-    isPlaying: Boolean
+    isPlaying: Boolean,
+    isOnline: Boolean
 ): LayoutElementBuilders.LayoutElement {
+
+    if (!isOnline) {
+        return LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setWidth(DimensionBuilders.wrap())
+                    .setHeight(DimensionBuilders.wrap())
+                    .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                    .addContent(
+                         LayoutElementBuilders.Image.Builder()
+                            .setResourceId("ic_wifi_off")
+                            .setWidth(DimensionBuilders.dp(48f))
+                            .setHeight(DimensionBuilders.dp(48f))
+                            .build()
+                    )
+                    .addContent(
+                        LayoutElementBuilders.Spacer.Builder()
+                            .setHeight(DimensionBuilders.dp(8f))
+                            .build()
+                    )
+                    .addContent(
+                        Text.Builder(context, "No Connection")
+                            .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                            .setMultilineAlignment(LayoutElementBuilders.TEXT_ALIGN_CENTER)
+                            .build()
+                    )
+                    .build()
+            )
+            .build()
+    }
 
     fun clickableFor(action: String): ModifiersBuilders.Clickable {
         return ModifiersBuilders.Clickable.Builder()
@@ -288,5 +345,5 @@ private fun tileLayout(
 @Preview(device = WearDevices.SMALL_ROUND)
 @Preview(device = WearDevices.LARGE_ROUND)
 fun tilePreview(context: Context) = TilePreviewData({ resources() }) {
-    tile(context, false)
+    tile(context, false, true)
 }
