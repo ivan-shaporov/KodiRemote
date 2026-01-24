@@ -15,6 +15,10 @@ class NetworkKodiClient(
     companion object {
         private val okHttpClient: OkHttpClient by lazy {
             OkHttpClient.Builder()
+                .callTimeout(java.time.Duration.ofSeconds(3))
+                .connectTimeout(java.time.Duration.ofSeconds(3))
+                .readTimeout(java.time.Duration.ofSeconds(3))
+                .writeTimeout(java.time.Duration.ofSeconds(3))
                 .addInterceptor { chain ->
                     val request = chain.request().newBuilder()
                         .addHeader("Authorization", Credentials.basic(BuildConfig.KODI_USERNAME, BuildConfig.KODI_PASSWORD))
@@ -193,5 +197,13 @@ class NetworkKodiClient(
         } catch (e: Exception) {
             return false
         }
+    }
+
+    suspend fun ping() {
+        service.execute(
+            RpcRequest(
+                method = "JSONRPC.Ping"
+            )
+        )
     }
 }

@@ -79,26 +79,38 @@ class MainTileService : SuspendingTileService() {
     ): TileBuilders.Tile {
         val client = NetworkKodiClient()
         val isOnline = isOnline()
+        var error: String? = null
 
-        if (isOnline && requestParams.currentState.lastClickableId.isNotEmpty()) {
+        if (isOnline) {
             try {
-                when (requestParams.currentState.lastClickableId) {
-                    "kodi_${MainActivity.TILE_ACTION_PLAY_PAUSE}" -> client.playPause()
-                    "kodi_${MainActivity.TILE_ACTION_STOP}" -> client.stop()
-                    "kodi_${MainActivity.TILE_ACTION_PREVIOUS}" -> client.previous()
-                    "kodi_${MainActivity.TILE_ACTION_NEXT}" -> client.next()
-                    "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_LARGE}" -> client.seekBy(-MainActivity.SEEK_OFFSET_LARGE_SECONDS)
-                    "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_SMALL}" -> client.seekBy(-MainActivity.SEEK_OFFSET_SMALL_SECONDS)
-                    "kodi_${MainActivity.TILE_ACTION_SEEK_FORWARD_SMALL}" -> client.seekBy(MainActivity.SEEK_OFFSET_SMALL_SECONDS)
-                    "kodi_${MainActivity.TILE_ACTION_SEEK_FORWARD_LARGE}" -> client.seekBy(MainActivity.SEEK_OFFSET_LARGE_SECONDS)
+                // Check connection first
+                client.ping()
+                
+                if (requestParams.currentState.lastClickableId.isNotEmpty()) {
+                    try {
+                        when (requestParams.currentState.lastClickableId) {
+                            "kodi_${MainActivity.TILE_ACTION_PLAY_PAUSE}" -> client.playPause()
+                            "kodi_${MainActivity.TILE_ACTION_STOP}" -> client.stop()
+                            "kodi_${MainActivity.TILE_ACTION_PREVIOUS}" -> client.previous()
+                            "kodi_${MainActivity.TILE_ACTION_NEXT}" -> client.next()
+                            "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_LARGE}" -> client.seekBy(-MainActivity.SEEK_OFFSET_LARGE_SECONDS)
+                            "kodi_${MainActivity.TILE_ACTION_SEEK_BACK_SMALL}" -> client.seekBy(-MainActivity.SEEK_OFFSET_SMALL_SECONDS)
+                            "kodi_${MainActivity.TILE_ACTION_SEEK_FORWARD_SMALL}" -> client.seekBy(MainActivity.SEEK_OFFSET_SMALL_SECONDS)
+                            "kodi_${MainActivity.TILE_ACTION_SEEK_FORWARD_LARGE}" -> client.seekBy(MainActivity.SEEK_OFFSET_LARGE_SECONDS)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        error = "Action failed"
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                error = "Kodi Unreachable"
             }
         }
 
-        val isPlaying = if (isOnline) client.isPlaying() else false
-        return tile(this, isPlaying, isOnline)
+        val isPlaying = if (isOnline && error == null) client.isPlaying() else false
+        return tile(this, isPlaying, isOnline, error)
     }
 }
 
@@ -141,7 +153,8 @@ private fun resources(): ResourceBuilders.Resources {
 private fun tile(
     context: Context,
     isPlaying: Boolean,
-    isOnline: Boolean
+    isOnline: Boolean,
+    error: String? = null
 ): TileBuilders.Tile {
     val nowWallClockMs = System.currentTimeMillis()
 
@@ -156,7 +169,7 @@ private fun tile(
                 )
                 .setLayout(
                     LayoutElementBuilders.Layout.Builder()
-                        .setRoot(tileLayout(context, isPlaying, isOnline))
+                        .setRoot(tileLayout(context, isPlaying, isOnline, error))
                         .build()
                 )
                 .build()
@@ -178,7 +191,8 @@ private fun tile(
 private fun tileLayout(
     context: Context,
     isPlaying: Boolean,
-    isOnline: Boolean
+    isOnline: Boolean,
+    error: String? = null
 ): LayoutElementBuilders.LayoutElement {
 
     if (!isOnline) {
@@ -206,6 +220,40 @@ private fun tileLayout(
                     )
                     .addContent(
                         Text.Builder(context, "No Connection")
+                            .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                            .setMultilineAlignment(LayoutElementBuilders.TEXT_ALIGN_CENTER)
+                            .build()
+                    )
+                    .build()
+            )
+            .build()
+    }
+
+    if (error != null) {
+        return LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setWidth(DimensionBuilders.wrap())
+                    .setHeight(DimensionBuilders.wrap())
+                    .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                    .addContent(
+                         LayoutElementBuilders.Image.Builder()
+                            .setResourceId("ic_wifi_off") // Or maybe a different icon if available
+                            .setWidth(DimensionBuilders.dp(48f))
+                            .setHeight(DimensionBuilders.dp(48f))
+                            .build()
+                    )
+                    .addContent(
+                        LayoutElementBuilders.Spacer.Builder()
+                            .setHeight(DimensionBuilders.dp(8f))
+                            .build()
+                    )
+                    .addContent(
+                        Text.Builder(context, error)
                             .setTypography(Typography.TYPOGRAPHY_CAPTION1)
                             .setMultilineAlignment(LayoutElementBuilders.TEXT_ALIGN_CENTER)
                             .build()
