@@ -103,17 +103,6 @@ class NetworkKodiClient(
             }
         }
 
-        suspend fun getActivePlayerId(): Int? {
-            val response = service.execute(
-                RpcRequest(
-                    method = "Player.GetActivePlayers"
-                )
-            )
-            val players = response.result as? List<*> ?: return null
-            val first = players.firstOrNull() as? Map<*, *> ?: return null
-            return numberToInt(first["playerid"])
-        }
-
         fun timeMapToSeconds(time: Any?): Int? {
             val map = time as? Map<*, *> ?: return null
             val hours = numberToInt(map["hours"]) ?: 0
@@ -122,7 +111,7 @@ class NetworkKodiClient(
             return (hours * 3600) + (minutes * 60) + seconds
         }
 
-        val playerId = getActivePlayerId() ?: 1
+        val playerId = 1
 
         val response = service.execute(
             RpcRequest(
